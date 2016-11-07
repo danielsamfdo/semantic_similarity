@@ -42,7 +42,15 @@ def cosinesimilarity(document1, document2, TFIDFScores):
   tokens2 = set(process.tokens(document2))
   vector1 = DocvectorTFIDF(TFIDFScores, tokens1)
   vector2 = DocvectorTFIDF(TFIDFScores, tokens2)
-  len_vector_1 = sum({k: v**2 for k, v in vector1.items()}.values())
-  len_vector_2 = sum({k: v**2 for k, v in vector2.items()}.values())
+  len_vector_1 = math.sqrt(sum({k: v**2 for k, v in vector1.items()}.values()))
+  len_vector_2 = math.sqrt(sum({k: v**2 for k, v in vector2.items()}.values()))
+  cosine_similarity_score = (utility.dict_dotprod(vector1,vector2))/float((len_vector_2*len_vector_1))
+  return cosine_similarity_score
+
+def cosinesimilarity_without_TFIDF(document1, document2, TFIDFScores):
+  vector1 = Counter(process.tokens(document1))
+  vector2 = Counter(process.tokens(document2))
+  len_vector_1 = math.sqrt(sum({k: v**2 for k, v in vector1.items()}.values()))
+  len_vector_2 = math.sqrt(sum({k: v**2 for k, v in vector2.items()}.values()))
   cosine_similarity_score = (utility.dict_dotprod(vector1,vector2))/float((len_vector_2*len_vector_1))
   return cosine_similarity_score
