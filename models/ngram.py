@@ -3,17 +3,38 @@ from collections import Counter
 import preprocess as process
 import utilities as utility
 import math
+import numpy
 
 def ngram_vector_keys(tokens, ngram_size=1):
   vector_keys = []
   for i in range(len(tokens)-(ngram_size-1)):
-    vector_keys.append(" ".join(tokens[i:i+(ngram_size)]))
+    vector_keys.append(tuple(tokens[i:i+(ngram_size)]))
+    # vector_keys.append(" ".join(tokens[i:i+(ngram_size)]))
   return vector_keys
+
+def containment_coefficienct(sent_1_tokens, sent_2_tokens, ngram_size=1):
+  set1 = set(ngram_vector_keys(sent_1_tokens, ngram_size))
+  set2 = set(ngram_vector_keys(sent_2_tokens, ngram_size))
+  intersecting_keys_len = len(set1.intersection(set2))
+  containment_of_sentence_1_in_2 = float(intersecting_keys_len)/len(set1)
+  containment_of_sentence_2_in_1 = float(intersecting_keys_len)/len(set2)
+  # return containment_of_sentence_1_in_2, containment_of_sentence_2_in_1
+  return numpy.mean([containment_of_sentence_1_in_2, containment_of_sentence_2_in_1])
 
 def JaccardCoefficient(sent_1_tokens, sent_2_tokens, ngram_size=1):
   set1 = set(ngram_vector_keys(sent_1_tokens, ngram_size))
   set2 = set(ngram_vector_keys(sent_2_tokens, ngram_size))
   return float(len(set1.intersection(set2)))/len(set1.union(set2))
+
+def POSTags_JaccardCoefficient_and_containment_coefficienct(sent_1_tokens, sent_2_tokens, ngram_size=1):
+  postag_tokens_1 = process.postags(sent_1_tokens)
+  postag_tokens_2 = process.postags(sent_2_tokens)
+  return JaccardCoefficient(postag_tokens_1, postag_tokens_2, ngram_size), containment_coefficienct(postag_tokens_1, postag_tokens_2, ngram_size)
+
+def Lemma_JaccardCoefficient_and_containment_coefficienct(sent_1_tokens, sent_2_tokens, ngram_size=1):
+  lemma_tokens_1 = process.lemmatize(sent_1_tokens)
+  lemma_tokens_2 = process.lemmatize(sent_2_tokens)
+  return JaccardCoefficient(lemma_tokens_1, lemma_tokens_2, ngram_size), containment_coefficienct(lemma_tokens_1, lemma_tokens_2, ngram_size)
 
 def TFIDF(documents):
   Vocabulary = Counter()
