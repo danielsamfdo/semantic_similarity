@@ -1,7 +1,7 @@
 from collections import defaultdict
 from collections import Counter
-import preprocess as process
-import utilities as utility
+import lib.preprocess as process
+import lib.utilities as utility
 import math
 import numpy
 
@@ -86,7 +86,10 @@ def TFIDF(documents):
   DocVectors = []
   IDFVector = Counter()
   No_of_Documents = float(len(documents))
+  n = len(documents)
   for document in documents:
+    print str(n) + " Documents remaining to process"
+    n-=1
     tf_single_doc_count = Counter(process.tokens(document))
     Vocabulary+= tf_single_doc_count
     DocVectors.append(tf_single_doc_count)
@@ -102,9 +105,12 @@ def TFIDF(documents):
 
 def CharacterIDFVector(documents, ngram_size=2):
   No_of_Documents = float(len(documents))
+  n = len(documents)
   IDFVector = Counter()
   for document in documents:
     tokens = process.tokens(document)
+    print str(n) + " Documents remaining to process"
+    n-=1
     IDFVector += Counter(set(character_ngram_vector_keys(tokens, ngram_size)))
   print IDFVector
   for key in IDFVector.keys():

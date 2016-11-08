@@ -1,12 +1,14 @@
 import glob
 import re
+import codecs
+
 def collecting_data(filesregexmatch, maxsplit):
   Data = []
   for fname in glob.glob(filesregexmatch):
-    with open(fname) as f:
+    with codecs.open(fname, "r", "utf-8") as f:
       lines = f.readlines()
       # print fname
-      with open(re.sub("input","gs",fname)) as nfile:
+      with codecs.open(re.sub("input","gs",fname), "r", "utf-8") as nfile:
         # print fname
         nlines = nfile.readlines()
         for index,line in enumerate(lines):
