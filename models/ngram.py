@@ -46,7 +46,7 @@ def similarity_score(set1, set2, IDFScores=None, character_ngram=False, ngram_we
     numerator = len(set1)
     denominator = len(set2)
   else:
-    print set1,character_ngram,IDFScores
+    #print set1,character_ngram,IDFScores
     numerator = ngram_weighted_value(set1, IDFScores, character_ngram)
     denominator = ngram_weighted_value(set2, IDFScores, character_ngram)
     # INCASE IDF Values are not present for it
@@ -112,7 +112,7 @@ def CharacterIDFVector(documents, ngram_size=2):
     print str(n) + " Documents remaining to process"
     n-=1
     IDFVector += Counter(set(character_ngram_vector_keys(tokens, ngram_size)))
-  print IDFVector
+  #print IDFVector
   for key in IDFVector.keys():
     IDFVector[key] = math.log(No_of_Documents/(1+IDFVector[key]))
   return IDFVector
