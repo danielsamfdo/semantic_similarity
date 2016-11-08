@@ -22,7 +22,7 @@ def collecting_data(filesregexmatch, maxsplit):
             Data.append([x[0],x[1], float(re.sub("\n","",nlines[index]))])    
   return Data
 
-def TrainData():
+def Data():
   prefix = "/Users/danielsampetethiyagu/github/semantic_similarity/STS-data"
   Data = collecting_data(prefix + "/*201[1-5]*/*input*.txt", 2) + collecting_data(prefix + "/*2016*/*input*.txt", 4) 
   return Data
