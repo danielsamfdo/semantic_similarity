@@ -7,7 +7,7 @@ import lib.preprocess as process
 
 def main():
   Data = data_collection.Data();
-  #Data = Data[:10]
+  Data = Data[:1000]
   corpus_size = len(Data)
   print "The Total Corpus Data is about " + str(corpus_size)
   #cosine_similarity_without_tfidf_predicted_answers = cosine_similarity_without_tfidf(Data)
@@ -45,8 +45,6 @@ def evaluate(gold_standard, predicted_answers):
 
 def train_and_test_simple_model(train_documents, test_documents, training_documents_answers, test_documents_answers):
   TFIDFScores, Vocabulary, DocVectors, IDFVector = ngram.TFIDF(train_documents)
-  #print "Came ine "
-  Char_IDFVector = ngram.CharacterIDFVector(train_documents, ngram_size=2)
   print "Training Documents Analysis"
   print "-------------------------------------------------------------------"
   train_predicted_answers = cosinesimilarity_evaluate_TFIDF(train_documents, TFIDFScores, training_documents_answers)
@@ -54,10 +52,10 @@ def train_and_test_simple_model(train_documents, test_documents, training_docume
   print "Test Documents Analysis"
   print "-------------------------------------------------------------------"
   test_predicted_answers = cosinesimilarity_evaluate_TFIDF(test_documents, TFIDFScores, test_documents_answers)
-  for ngram_size in range(1,2):
+  for ngram_size in range(1,5):
     for analyze_type in ["pos", "lemma", "character"]:
       if(analyze_type=="character"):
-        idf_scores = Char_IDFVector
+        idf_scores = ngram.CharacterIDFVector(train_documents, ngram_size)
       else:
         idf_scores = IDFVector
       print "-------------------------------------------------------------------"  
@@ -76,9 +74,9 @@ def cosinesimilarity_evaluate_TFIDF(documents, TFIDFScores, answers):
   predicted_answers = []
   for i in range(len(documents)/2):
     document1, document2 = documents[(2*i)], documents[(2*i)+1]
-    print document1, document2
+    #print document1, document2
     predicted_answers.append(5*ngram.cosinesimilarity(document1, document2, TFIDFScores))
-    print answers[ind],   "   |   ", predicted_answers[ind]
+    #print answers[ind],   "   |   ", predicted_answers[ind]
     ind+=1
   print "Error in Estimate is " + str(evaluate(answers, predicted_answers))
   return predicted_answers 
@@ -89,7 +87,7 @@ def jaccard_and_containment_coefficient_evaluate(analyze_type, documents, answer
   jaccard_coefficient_predicted_answers = []
   for i in range(len(documents)/2):
     document1, document2 = documents[(2*i)], documents[(2*i)+1]
-    print document1, document2
+    #print document1, document2
     sent_1_tokens = process.tokens(document1)
     sent_2_tokens = process.tokens(document2)
     if(analyze_type=="pos"):
@@ -100,8 +98,8 @@ def jaccard_and_containment_coefficient_evaluate(analyze_type, documents, answer
       jaccard_coefficient, containment_coefficient = ngram.character_ngram_JaccardCoefficient_and_containment_coefficienct(sent_1_tokens, sent_2_tokens, ngram_size, True, ngram_weighing, IDFScores)
     jaccard_coefficient_predicted_answers.append(5*jaccard_coefficient)
     containment_coefficient_predicted_answers.append(5*containment_coefficient)
-    print answers[ind],   "   |   ", jaccard_coefficient_predicted_answers[ind]
-    print answers[ind],   "   |   ", containment_coefficient_predicted_answers[ind]
+    #print answers[ind],   "   |   ", jaccard_coefficient_predicted_answers[ind]
+    #print answers[ind],   "   |   ", containment_coefficient_predicted_answers[ind]
     ind+=1
   print "Error in Estimate For Jaccard Coefficient is " + str(evaluate(answers, jaccard_coefficient_predicted_answers))
   print "Error in Estimate For Containment Coefficient is " + str(evaluate(answers, containment_coefficient_predicted_answers))
