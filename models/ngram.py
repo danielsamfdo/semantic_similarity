@@ -1,12 +1,16 @@
+from __future__ import division
 from collections import defaultdict
 from collections import Counter
 import lib.preprocess as process
 import lib.utilities as utility
 import math
+import pdb
 import numpy
 
 def ngram_vector_keys(tokens, ngram_size=1):
   vector_keys = []
+  if(len(tokens)-(ngram_size-1)<=0):
+      return [tuple(tokens[0:])]
   for i in range(len(tokens)-(ngram_size-1)):
     vector_keys.append(tuple(tokens[i:i+(ngram_size)]))
     # vector_keys.append(" ".join(tokens[i:i+(ngram_size)]))
@@ -14,9 +18,13 @@ def ngram_vector_keys(tokens, ngram_size=1):
 
 def character_ngram_vector_keys(tokens, ngram_size=2):
   vector_keys = []
+
   for token in tokens:
-    for i in range(len(token)-(ngram_size-1)):
-      vector_keys.append(tuple(token[i:i+(ngram_size)]))
+    if(len(token)-(ngram_size-1)<=0):
+      vector_keys.append(tuple(token[0:]))
+    else:
+      for i in range(len(token)-(ngram_size-1)):
+        vector_keys.append(tuple(token[i:i+(ngram_size)]))
   return vector_keys
 
 def ngram_keys(sent_1_tokens, sent_2_tokens, ngram_size, character_ngram):
@@ -33,8 +41,12 @@ def ngram_weighted_value(keys, IDFScores, character_ngram=False):
   if not character_ngram:
     for key in keys:
       for i in range(len(key)):# This is a tuple
-        if key[i] in IDFScores.keys():
-          value += IDFScores[key[i]]
+        if(type(key[i]) is not tuple):
+          if key[i] in IDFScores.keys():
+            value += IDFScores[key[i]]
+        else:
+          if key[i][0] in IDFScores.keys():
+            value += IDFScores[key[i][0]] 
   else:
     for key in keys:
       if key in IDFScores.keys():
@@ -53,7 +65,12 @@ def similarity_score(set1, set2, IDFScores=None, character_ngram=False, ngram_we
     if denominator == 0:
       numerator = len(set1)
       denominator = len(set2)
-  return numerator/float(denominator)
+  try:
+    value = numerator/float(denominator)
+  except ZeroDivisionError:
+    pdb.set_trace()
+    value = float(len(set1))/len(set2)
+  return value
 
 def containment_coefficienct(sent_1_tokens, sent_2_tokens, ngram_size=1, character_ngram=False, ngram_weighing=False, IDFScores=None):
   set1, set2 = ngram_keys(sent_1_tokens, sent_2_tokens, ngram_size, character_ngram)
@@ -65,7 +82,11 @@ def containment_coefficienct(sent_1_tokens, sent_2_tokens, ngram_size=1, charact
 
 def JaccardCoefficient(sent_1_tokens, sent_2_tokens, ngram_size=1, character_ngram=False, ngram_weighing=False, IDFScores=None):
   set1, set2 = ngram_keys(sent_1_tokens, sent_2_tokens, ngram_size, character_ngram)
-  return similarity_score(set1.intersection(set2), set1.union(set2), IDFScores, character_ngram, ngram_weighing)
+  try:  
+    value = similarity_score(set1.intersection(set2), set1.union(set2), IDFScores, character_ngram, ngram_weighing)
+  except:
+    pdb.set_trace()
+  return value
   # return float(len(set1.intersection(set2)))/len(set1.union(set2))
 
 def POSTags_JaccardCoefficient_and_containment_coefficienct(sent_1_tokens, sent_2_tokens, ngram_size=1, ngram_weighing=False, IDFScores=None):
@@ -109,7 +130,7 @@ def CharacterIDFVector(documents, ngram_size=2):
   IDFVector = Counter()
   for document in documents:
     tokens = process.tokens(document)
-    print str(n) + " Documents remaining to process"
+    # print str(n) + " Documents remaining to process"
     n-=1
     IDFVector += Counter(set(character_ngram_vector_keys(tokens, ngram_size)))
   #print IDFVector

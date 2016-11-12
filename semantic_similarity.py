@@ -1,32 +1,38 @@
 import lib.collect_data as data_collection
 import models.ngram as ngram
+import models.linear_regression as lr
 import math as math
 import itertools
 import numpy as np
 import lib.preprocess as process
+import lib.utilities as utility
+import pdb
 
 def main():
   Data = data_collection.Data();
-  Data = Data[:1000]
+  # Data = Data[:1000]
   corpus_size = len(Data)
-  print "The Total Corpus Data is about " + str(corpus_size)
-  #cosine_similarity_without_tfidf_predicted_answers = cosine_similarity_without_tfidf(Data)
-  train_split = 0.8
+  print "The Total Corpus Data is about " + str(corpus_size*2)
+  cosine_similarity_without_tfidf_predicted_answers = cosine_similarity_without_tfidf(Data)
+  train_split = 0.6
   training_data_documents_size = int(round(corpus_size * train_split))
   #print training_data_documents_size
   test_data_documents_size = corpus_size - training_data_documents_size
   training_documents =  Data[:training_data_documents_size]
-  test_documents = Data[training_data_documents_size+1:]
+  # print training_data_documents_size
+  test_documents = Data[training_data_documents_size:]
+  # print test_documents
   print "Training on " + str(training_data_documents_size*2) + " documents"
-  print "Testing on " + str(test_data_documents_size) + " documents"
+  print "Testing on " + str(test_data_documents_size*2) + " documents"
   training_documents_answers = [item[2] for item in training_documents]
   training_documents = [item[0:2] for item in training_documents]
   training_documents = list(itertools.chain.from_iterable(training_documents))
   test_documents_answers = [item[2] for item in test_documents]
   test_documents = [item[0:2] for item in test_documents]
   test_documents = list(itertools.chain.from_iterable(test_documents))
-  train_and_test_simple_model(training_documents, test_documents, training_documents_answers, test_documents_answers)
-
+  # print training_documents_answers
+  train_and_test_simple_model(training_documents, test_documents, training_documents_answers, test_documents_answers, load=True)
+  train_and_test_Linear_Regression_model(training_documents, test_documents, training_documents_answers, test_documents_answers, load=False)
 
 def cosine_similarity_without_tfidf(documents):
   answers = []
@@ -35,16 +41,30 @@ def cosine_similarity_without_tfidf(documents):
   for document in documents:
     answers.append(document[2])
     predicted_answers.append(5 * ngram.cosinesimilarity_without_TFIDF(document[0], document[1]))
-    print answers[ind],   "   |   ",  predicted_answers[ind]
+    # print answers[ind],   "   |   ",  predicted_answers[ind]
     ind+=1
-  print "Error in Estimate is " + str(evaluate(answers, predicted_answers))
+  print "Error in Estimate is " + str(utility.evaluate(answers, predicted_answers))
   return predicted_answers
 
 def evaluate(gold_standard, predicted_answers):
-  return math.sqrt(np.sum(np.power(np.array(gold_standard) - np.array(predicted_answers),2))) 
+  return np.sum(np.absolute(np.array(gold_standard) - np.array(predicted_answers)))/len(gold_standard) 
+  # return math.sqrt(np.sum(np.power(np.array(gold_standard) - np.array(predicted_answers),2))) 
 
-def train_and_test_simple_model(train_documents, test_documents, training_documents_answers, test_documents_answers):
-  TFIDFScores, Vocabulary, DocVectors, IDFVector = ngram.TFIDF(train_documents)
+def train_and_test_simple_model(train_documents, test_documents, training_documents_answers, test_documents_answers, load=False):
+  if(not load):
+    TFIDFScores, Vocabulary, DocVectors, IDFVector = ngram.TFIDF(train_documents)
+    #print TFIDFScores
+    utility.save_weights("TFIDFScores.dat",TFIDFScores);
+    utility.save_weights("Vocabulary.dat", Vocabulary);
+    utility.save_weights("DocVectors.dat", DocVectors);
+    utility.save_weights("IDFVector.dat", IDFVector);
+  else:
+    TFIDFScores=utility.load_weights("weights/TFIDFScores.dat")
+    #print TFIDFScores
+    Vocabulary=utility.load_weights("weights/Vocabulary.dat")
+    DocVectors=utility.load_weights("weights/DocVectors.dat")
+    IDFVector=utility.load_weights("weights/IDFVector.dat")
+  f = open("analysis.txt","w")
   print "Training Documents Analysis"
   print "-------------------------------------------------------------------"
   train_predicted_answers = cosinesimilarity_evaluate_TFIDF(train_documents, TFIDFScores, training_documents_answers)
@@ -53,22 +73,33 @@ def train_and_test_simple_model(train_documents, test_documents, training_docume
   print "-------------------------------------------------------------------"
   test_predicted_answers = cosinesimilarity_evaluate_TFIDF(test_documents, TFIDFScores, test_documents_answers)
   for ngram_size in range(1,5):
-    for analyze_type in ["pos", "lemma", "character"]:
+    for analyze_type in ["pos","lemma","character"]:#, "character"]:
       if(analyze_type=="character"):
-        idf_scores = ngram.CharacterIDFVector(train_documents, ngram_size)
+        if(not load):
+          idf_scores = ngram.CharacterIDFVector(train_documents, ngram_size)
+          utility.save_weights("IDF_Char_"+str(ngram_size)+"_gram.dat", idf_scores)
+        else:
+          idf_scores = utility.load_weights("weights/IDF_Char_"+str(ngram_size)+"_gram.dat")
       else:
         idf_scores = IDFVector
-      print "-------------------------------------------------------------------"  
-      print "Jaccards and Containment Coefficient Analysis using ngram weighing and type = " + analyze_type + " ngram = " + str(ngram_size)
       print "-------------------------------------------------------------------"
-      Jacc_one_gram_pred_answers, Containment_one_gram_pred_answers = jaccard_and_containment_coefficient_evaluate(analyze_type, train_documents, training_documents_answers, ngram_size, False, IDFScores=None)
-      Jacc_one_gram_pred_answers, Containment_one_gram_pred_answers = jaccard_and_containment_coefficient_evaluate(analyze_type, test_documents, test_documents_answers, ngram_size, False, IDFScores=None)
-      print "-------------------------------------------------------------------"  
+      f.write("-------------------------------------------------------------------")
+      print "Jaccards and Containment Coefficient Analysis without using ngram weighing and type = " + analyze_type + " ngram = " + str(ngram_size)
+      f.write("Jaccards and Containment Coefficient Analysis without using ngram weighing and type = " + analyze_type + " ngram = " + str(ngram_size))
+      print "-------------------------------------------------------------------"
+      f.write("-------------------------------------------------------------------")
+      Jacc_one_gram_pred_answers, Containment_one_gram_pred_answers = jaccard_and_containment_coefficient_evaluate(analyze_type, train_documents, training_documents_answers, ngram_size, False, None,f)
+      Jacc_one_gram_pred_answers, Containment_one_gram_pred_answers = jaccard_and_containment_coefficient_evaluate(analyze_type, test_documents, test_documents_answers, ngram_size, False, None,f)
+      print "-------------------------------------------------------------------"
+      f.write("-------------------------------------------------------------------")
       print "Jaccards and Containment Coefficient Analysis using ngram weighing and type = " + analyze_type + " ngram = " + str(ngram_size)
-      print "-------------------------------------------------------------------"  
-      Jacc_one_gram_pred_answers, Containment_one_gram_pred_answers = jaccard_and_containment_coefficient_evaluate(analyze_type, train_documents, training_documents_answers, ngram_size, True, idf_scores)
-      Jacc_one_gram_pred_answers, Containment_one_gram_pred_answers = jaccard_and_containment_coefficient_evaluate(analyze_type, test_documents, test_documents_answers, ngram_size, True, idf_scores)
-    
+      f.write("Jaccards and Containment Coefficient Analysis using ngram weighing and type = " + analyze_type + " ngram = " + str(ngram_size))
+      print "-------------------------------------------------------------------"
+      f.write("-------------------------------------------------------------------")
+      Jacc_one_gram_pred_answers, Containment_one_gram_pred_answers = jaccard_and_containment_coefficient_evaluate(analyze_type, train_documents, training_documents_answers, ngram_size, True, idf_scores,f)
+      Jacc_one_gram_pred_answers, Containment_one_gram_pred_answers = jaccard_and_containment_coefficient_evaluate(analyze_type, test_documents, test_documents_answers, ngram_size, True, idf_scores,f)
+  f.close()
+
 def cosinesimilarity_evaluate_TFIDF(documents, TFIDFScores, answers):
   ind = 0
   predicted_answers = []
@@ -78,14 +109,21 @@ def cosinesimilarity_evaluate_TFIDF(documents, TFIDFScores, answers):
     predicted_answers.append(5*ngram.cosinesimilarity(document1, document2, TFIDFScores))
     #print answers[ind],   "   |   ", predicted_answers[ind]
     ind+=1
-  print "Error in Estimate is " + str(evaluate(answers, predicted_answers))
+  print "Error in Estimate is " + str(utility.evaluate(answers, predicted_answers))
   return predicted_answers 
 
-def jaccard_and_containment_coefficient_evaluate(analyze_type, documents, answers, ngram_size=1, ngram_weighing=False, IDFScores=None):
+def jaccard_and_containment_coefficient_evaluate(analyze_type, documents, answers, ngram_size=1, ngram_weighing=False, IDFScores=None,f=None):
   ind = 0
   containment_coefficient_predicted_answers = []
   jaccard_coefficient_predicted_answers = []
+  init_doc_count = len(documents)/2
+  operated_doc_count = 0
   for i in range(len(documents)/2):
+    if(operated_doc_count == 400):
+      init_doc_count-=400
+      operated_doc_count=0
+      print str(init_doc_count) + " sets remaining"
+    operated_doc_count+=1
     document1, document2 = documents[(2*i)], documents[(2*i)+1]
     #print document1, document2
     sent_1_tokens = process.tokens(document1)
@@ -101,9 +139,15 @@ def jaccard_and_containment_coefficient_evaluate(analyze_type, documents, answer
     #print answers[ind],   "   |   ", jaccard_coefficient_predicted_answers[ind]
     #print answers[ind],   "   |   ", containment_coefficient_predicted_answers[ind]
     ind+=1
-  print "Error in Estimate For Jaccard Coefficient is " + str(evaluate(answers, jaccard_coefficient_predicted_answers))
-  print "Error in Estimate For Containment Coefficient is " + str(evaluate(answers, containment_coefficient_predicted_answers))
+  print "Error in Estimate For Jaccard Coefficient is " + str(utility.evaluate(answers, jaccard_coefficient_predicted_answers))
+  f.write("Error in Estimate For Jaccard Coefficient is " + str(utility.evaluate(answers, jaccard_coefficient_predicted_answers)))
+  print "Error in Estimate For Containment Coefficient is " + str(utility.evaluate(answers, containment_coefficient_predicted_answers))
+  f.write("Error in Estimate For Containment Coefficient is " + str(utility.evaluate(answers, containment_coefficient_predicted_answers)))
   return jaccard_coefficient_predicted_answers, containment_coefficient_predicted_answers
+
+def train_and_test_Linear_Regression_model(train_documents, test_documents, training_documents_answers, test_documents_answers, load=False):
+  lr.linear_regression(train_documents,  test_documents, training_documents_answers, test_documents_answers)
+  return
 
 if __name__ == "__main__":
   main()

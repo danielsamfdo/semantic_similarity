@@ -48,6 +48,7 @@ def semantic_similarity(combined_sent, curr_sentence, tot_count):
               second_word = each_word
               s_tilda = 1
           else:
+            
             first = wn.synsets(each)
             second = wn.synsets(each_word)
             sim = 0
