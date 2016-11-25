@@ -3,6 +3,27 @@ import dill
 import lib.preprocess as process
 from collections import Counter
 import numpy as np
+# import models.ngram as ng
+
+def ngram_vector_keys(tokens, ngram_size=1):
+  vector_keys = []
+  if(len(tokens)-(ngram_size-1)<=0):
+      return [tuple(tokens[0:])]
+  for i in range(len(tokens)-(ngram_size-1)):
+    vector_keys.append(tuple(tokens[i:i+(ngram_size)]))
+    # vector_keys.append(" ".join(tokens[i:i+(ngram_size)]))
+  return vector_keys
+
+def character_ngram_vector_keys(tokens, ngram_size=2):
+  vector_keys = []
+
+  for token in tokens:
+    if(len(token)-(ngram_size-1)<=0):
+      vector_keys.append(tuple(token[0:]))
+    else:
+      for i in range(len(token)-(ngram_size-1)):
+        vector_keys.append(tuple(token[i:i+(ngram_size)]))
+  return vector_keys
 
 def dict_dotprod(d1, d2):
   """Return the dot product (aka inner product) of two vectors, where each is
@@ -27,9 +48,27 @@ def evaluate(gold_standard, predicted_answers):
   # return math.sqrt(np.sum(np.power(np.array(gold_standard) - np.array(predicted_answers),2))) 
 
 def get_dict_vector_of_2_sentences(sentence_1_tokens, sentence_2_tokens):
-  return dict(Counter(sentence_1_tokens)+Counter(sentence_1_tokens))
+  # print sentence_1_tokens,sentence_2_tokens
+  # print dict(Counter(sentence_1_tokens)+Counter(sentence_2_tokens))
+  token_counter = Counter()
+  pos_counter = Counter()
+  lemma_counter = Counter()
+  char_counter = Counter()
+  # print sentence_1_tokens,sentence_2_tokens
+  pos_tokens_1 = process.lemmatize(sentence_1_tokens)
+  pos_tokens_2 = process.lemmatize(sentence_2_tokens)
+  lemma_tokens_1 = process.postags(sentence_1_tokens)
+  lemma_tokens_2 = process.postags(sentence_2_tokens)
+  for n in range(1,5):
+    token_counter += Counter(ngram_vector_keys(sentence_1_tokens, ngram_size=n))+Counter(ngram_vector_keys(sentence_2_tokens, ngram_size=n))
+    pos_counter += Counter(ngram_vector_keys(pos_tokens_1, ngram_size=n))+Counter(ngram_vector_keys(pos_tokens_2, ngram_size=n))
+    lemma_counter += Counter(ngram_vector_keys(lemma_tokens_1, ngram_size=n))+Counter(ngram_vector_keys(lemma_tokens_2, ngram_size=n))
+    if(n>=2):
+      char_counter += Counter(character_ngram_vector_keys(sentence_1_tokens, ngram_size=n))+Counter(character_ngram_vector_keys(sentence_2_tokens, ngram_size=n))
+  # print dict(token_counter+pos_counter+lemma_counter+char_counter)
+  return dict(token_counter+pos_counter+lemma_counter+char_counter)
 
-def get_dict_vectors_of_documents(documents):
+def get_dict_vectors_of_documents(documents, justTokens=False):
   init_doc_count = len(documents)/2
   operated_doc_count = 0
   doc_dict_vectors_list = []
@@ -43,5 +82,8 @@ def get_dict_vectors_of_documents(documents):
     sent_1_tokens = process.tokens(document1)
     sent_2_tokens = process.tokens(document2)
     # print sent_1_tokens, sent_2_tokens
-    doc_dict_vectors_list.append(get_dict_vector_of_2_sentences(sent_1_tokens, sent_2_tokens))
+    if(justTokens):
+      doc_dict_vectors_list.append((sent_1_tokens, sent_2_tokens))
+    else:
+      doc_dict_vectors_list.append(get_dict_vector_of_2_sentences(sent_1_tokens, sent_2_tokens))
   return doc_dict_vectors_list

@@ -7,33 +7,33 @@ import math
 import pdb
 import numpy
 
-def ngram_vector_keys(tokens, ngram_size=1):
-  vector_keys = []
-  if(len(tokens)-(ngram_size-1)<=0):
-      return [tuple(tokens[0:])]
-  for i in range(len(tokens)-(ngram_size-1)):
-    vector_keys.append(tuple(tokens[i:i+(ngram_size)]))
-    # vector_keys.append(" ".join(tokens[i:i+(ngram_size)]))
-  return vector_keys
+# def ngram_vector_keys(tokens, ngram_size=1):
+#   vector_keys = []
+#   if(len(tokens)-(ngram_size-1)<=0):
+#       return [tuple(tokens[0:])]
+#   for i in range(len(tokens)-(ngram_size-1)):
+#     vector_keys.append(tuple(tokens[i:i+(ngram_size)]))
+#     # vector_keys.append(" ".join(tokens[i:i+(ngram_size)]))
+#   return vector_keys
 
-def character_ngram_vector_keys(tokens, ngram_size=2):
-  vector_keys = []
+# def character_ngram_vector_keys(tokens, ngram_size=2):
+#   vector_keys = []
 
-  for token in tokens:
-    if(len(token)-(ngram_size-1)<=0):
-      vector_keys.append(tuple(token[0:]))
-    else:
-      for i in range(len(token)-(ngram_size-1)):
-        vector_keys.append(tuple(token[i:i+(ngram_size)]))
-  return vector_keys
+#   for token in tokens:
+#     if(len(token)-(ngram_size-1)<=0):
+#       vector_keys.append(tuple(token[0:]))
+#     else:
+#       for i in range(len(token)-(ngram_size-1)):
+#         vector_keys.append(tuple(token[i:i+(ngram_size)]))
+#   return vector_keys
 
 def ngram_keys(sent_1_tokens, sent_2_tokens, ngram_size, character_ngram):
   if character_ngram:
-    set1 = set(character_ngram_vector_keys(sent_1_tokens, ngram_size))
-    set2 = set(character_ngram_vector_keys(sent_2_tokens, ngram_size))
+    set1 = set(utility.character_ngram_vector_keys(sent_1_tokens, ngram_size))
+    set2 = set(utility.character_ngram_vector_keys(sent_2_tokens, ngram_size))
   else:
-    set1 = set(ngram_vector_keys(sent_1_tokens, ngram_size))
-    set2 = set(ngram_vector_keys(sent_2_tokens, ngram_size))
+    set1 = set(utility.ngram_vector_keys(sent_1_tokens, ngram_size))
+    set2 = set(utility.ngram_vector_keys(sent_2_tokens, ngram_size))
   return set1, set2
 
 def ngram_weighted_value(keys, IDFScores, character_ngram=False):
@@ -132,7 +132,7 @@ def CharacterIDFVector(documents, ngram_size=2):
     tokens = process.tokens(document)
     # print str(n) + " Documents remaining to process"
     n-=1
-    IDFVector += Counter(set(character_ngram_vector_keys(tokens, ngram_size)))
+    IDFVector += Counter(set(utility.character_ngram_vector_keys(tokens, ngram_size)))
   #print IDFVector
   for key in IDFVector.keys():
     IDFVector[key] = math.log(No_of_Documents/(1+IDFVector[key]))

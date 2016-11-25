@@ -1,20 +1,23 @@
 import lib.collect_data as data_collection
 import models.ngram as ngram
 import models.linear_regression as lr
+import models.svm as svm
+import models.neuralnet_MLPRegressor as mlp
 import math as math
 import itertools
 import numpy as np
 import lib.preprocess as process
 import lib.utilities as utility
 import pdb
+import models.w2vec as w2vec
 
 def main():
   Data = data_collection.Data();
-  # Data = Data[:1000]
+  Data = Data[:10]
   corpus_size = len(Data)
   print "The Total Corpus Data is about " + str(corpus_size*2)
-  cosine_similarity_without_tfidf_predicted_answers = cosine_similarity_without_tfidf(Data)
-  train_split = 0.6
+  cosine_similarity_without_tfidfy_without_tfidf_predicted_answers = cosine_similarity_without_tfidf(Data)
+  train_split = 0.8
   training_data_documents_size = int(round(corpus_size * train_split))
   #print training_data_documents_size
   test_data_documents_size = corpus_size - training_data_documents_size
@@ -30,9 +33,13 @@ def main():
   test_documents_answers = [item[2] for item in test_documents]
   test_documents = [item[0:2] for item in test_documents]
   test_documents = list(itertools.chain.from_iterable(test_documents))
+  w2vec_model = w2vec.w2vec_model()
   # print training_documents_answers
-  train_and_test_simple_model(training_documents, test_documents, training_documents_answers, test_documents_answers, load=True)
-  train_and_test_Linear_Regression_model(training_documents, test_documents, training_documents_answers, test_documents_answers, load=False)
+  # train_and_test_simple_model(training_documents, test_documents, training_documents_answers, test_documents_answers, load=True)
+  train_and_test_Linear_Regression_model(training_documents, test_documents, training_documents_answers, test_documents_answers, load=False, w2vec_model=w2vec_model, use_w2_vec_model=True)
+  # train_and_test_SVM_model(training_documents, test_documents, training_documents_answers, test_documents_answers, load=True, w2vec_model=w2vec_model, use_w2_vec_model=True)
+  # train_and_test_MLP_model(training_documents, test_documents, training_documents_answers, test_documents_answers, load=True, w2vec_model=w2vec_model, use_w2_vec_model=True)
+  # w2vec.w2vec_similarity_measure_unsupervised(training_documents+test_documents, training_documents_answers+test_documents_answers)
 
 def cosine_similarity_without_tfidf(documents):
   answers = []
@@ -65,15 +72,15 @@ def train_and_test_simple_model(train_documents, test_documents, training_docume
     DocVectors=utility.load_weights("weights/DocVectors.dat")
     IDFVector=utility.load_weights("weights/IDFVector.dat")
   f = open("analysis.txt","w")
-  print "Training Documents Analysis"
-  print "-------------------------------------------------------------------"
-  train_predicted_answers = cosinesimilarity_evaluate_TFIDF(train_documents, TFIDFScores, training_documents_answers)
+  # print "Training Documents Analysis"
+  # print "-------------------------------------------------------------------"
+  # train_predicted_answers = cosinesimilarity_evaluate_TFIDF(train_documents, TFIDFScores, training_documents_answers)
   
-  print "Test Documents Analysis"
-  print "-------------------------------------------------------------------"
-  test_predicted_answers = cosinesimilarity_evaluate_TFIDF(test_documents, TFIDFScores, test_documents_answers)
+  # print "Test Documents Analysis"
+  # print "-------------------------------------------------------------------"
+  # test_predicted_answers = cosinesimilarity_evaluate_TFIDF(test_documents, TFIDFScores, test_documents_answers)
   for ngram_size in range(1,5):
-    for analyze_type in ["pos","lemma","character"]:#, "character"]:
+    for analyze_type in ["lemma","pos","character"]:#, "character"]:
       if(analyze_type=="character"):
         if(not load):
           idf_scores = ngram.CharacterIDFVector(train_documents, ngram_size)
@@ -82,14 +89,14 @@ def train_and_test_simple_model(train_documents, test_documents, training_docume
           idf_scores = utility.load_weights("weights/IDF_Char_"+str(ngram_size)+"_gram.dat")
       else:
         idf_scores = IDFVector
-      print "-------------------------------------------------------------------"
-      f.write("-------------------------------------------------------------------")
-      print "Jaccards and Containment Coefficient Analysis without using ngram weighing and type = " + analyze_type + " ngram = " + str(ngram_size)
-      f.write("Jaccards and Containment Coefficient Analysis without using ngram weighing and type = " + analyze_type + " ngram = " + str(ngram_size))
-      print "-------------------------------------------------------------------"
-      f.write("-------------------------------------------------------------------")
-      Jacc_one_gram_pred_answers, Containment_one_gram_pred_answers = jaccard_and_containment_coefficient_evaluate(analyze_type, train_documents, training_documents_answers, ngram_size, False, None,f)
-      Jacc_one_gram_pred_answers, Containment_one_gram_pred_answers = jaccard_and_containment_coefficient_evaluate(analyze_type, test_documents, test_documents_answers, ngram_size, False, None,f)
+      # print "-------------------------------------------------------------------"
+      # f.write("-------------------------------------------------------------------")
+      # print "Jaccards and Containment Coefficient Analysis without using ngram weighing and type = " + analyze_type + " ngram = " + str(ngram_size)
+      # f.write("Jaccards and Containment Coefficient Analysis without using ngram weighing and type = " + analyze_type + " ngram = " + str(ngram_size))
+      # print "-------------------------------------------------------------------"
+      # f.write("-------------------------------------------------------------------")
+      # Jacc_one_gram_pred_answers, Containment_one_gram_pred_answers = jaccard_and_containment_coefficient_evaluate(analyze_type, train_documents, training_documents_answers, ngram_size, False, None,f)
+      # Jacc_one_gram_pred_answers, Containment_one_gram_pred_answers = jaccard_and_containment_coefficient_evaluate(analyze_type, test_documents, test_documents_answers, ngram_size, False, None,f)
       print "-------------------------------------------------------------------"
       f.write("-------------------------------------------------------------------")
       print "Jaccards and Containment Coefficient Analysis using ngram weighing and type = " + analyze_type + " ngram = " + str(ngram_size)
@@ -145,8 +152,16 @@ def jaccard_and_containment_coefficient_evaluate(analyze_type, documents, answer
   f.write("Error in Estimate For Containment Coefficient is " + str(utility.evaluate(answers, containment_coefficient_predicted_answers)))
   return jaccard_coefficient_predicted_answers, containment_coefficient_predicted_answers
 
-def train_and_test_Linear_Regression_model(train_documents, test_documents, training_documents_answers, test_documents_answers, load=False):
-  lr.linear_regression(train_documents,  test_documents, training_documents_answers, test_documents_answers)
+def train_and_test_Linear_Regression_model(train_documents, test_documents, training_documents_answers, test_documents_answers, load=False, w2vec_model=None, use_w2_vec_model=True):
+  lr.linear_regression(train_documents,  test_documents, training_documents_answers, test_documents_answers, load=load, w2vec_model=w2vec_model, use_w2_vec_model=True)
+  return
+
+def train_and_test_SVM_model(train_documents, test_documents, training_documents_answers, test_documents_answers, load=False, w2vec_model=None, use_w2_vec_model=True):
+  svm.support_vector_machines(train_documents,  test_documents, training_documents_answers, test_documents_answers, load=load, w2vec_model=w2vec_model, use_w2_vec_model=True)
+  return
+
+def train_and_test_MLP_model(train_documents, test_documents, training_documents_answers, test_documents_answers, load=False, w2vec_model=None, use_w2_vec_model=True):
+  mlp.mlp_network(train_documents,  test_documents, training_documents_answers, test_documents_answers, load=load, w2vec_model=w2vec_model, use_w2_vec_model=True)
   return
 
 if __name__ == "__main__":
