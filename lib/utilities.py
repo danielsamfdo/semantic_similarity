@@ -68,7 +68,7 @@ def get_dict_vector_of_2_sentences(sentence_1_tokens, sentence_2_tokens):
   # print dict(token_counter+pos_counter+lemma_counter+char_counter)
   return dict(token_counter+pos_counter+lemma_counter+char_counter)
 
-def get_dict_vectors_of_documents(documents, justTokens=False):
+def get_dict_vectors_of_documents(documents, justTokens=False, scores=None, headers=None):
   init_doc_count = len(documents)/2
   operated_doc_count = 0
   doc_dict_vectors_list = []
@@ -85,5 +85,30 @@ def get_dict_vectors_of_documents(documents, justTokens=False):
     if(justTokens):
       doc_dict_vectors_list.append((sent_1_tokens, sent_2_tokens))
     else:
-      doc_dict_vectors_list.append(get_dict_vector_of_2_sentences(sent_1_tokens, sent_2_tokens))
+      dictionary_v = {}
+      if headers!= None:
+        val = {}
+        for idx, header in enumerate(headers):
+          val[header] = scores[i][idx]
+        # dictionary_v.update(val)
+      dictionary_v.update(get_dict_vector_of_2_sentences(sent_1_tokens, sent_2_tokens))
+      doc_dict_vectors_list.append(dictionary_v)
   return doc_dict_vectors_list
+
+def appendWordEmbeddings(Doc_Dict_Vectors,TR_S1,TR_S2):
+  assert len(Doc_Dict_Vectors)==len(TR_S1)
+  for i in range(len(Doc_Dict_Vectors)):
+    S1 = TR_S1[i]
+    v = {}
+    for idx,j in enumerate(S1):
+      v['S1_'+str(idx)] = S1[idx]
+    print v
+    Doc_Dict_Vectors[i].update(v)
+    S2 = TR_S2[i]
+    v = {}
+    for idx,j in enumerate(S2):
+      v['S2_'+str(idx)] = S2[idx]
+    print v
+    Doc_Dict_Vectors[i].update(v)
+  return Doc_Dict_Vectors
+
